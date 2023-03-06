@@ -1,0 +1,31 @@
+{
+    "name": "siddiquinoor/nagad-in-laravel",
+    "description": "Nagad Payment Gateway for Laravel",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["Nagad API", "Nagad Laravel"],
+    "autoload": {
+        "psr-0": {
+            "NagadLaravel": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Siddiqui Noor",
+            "email": "mr.noorbd@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    
+    "require-dev": {
+        "orchestra/testbench": "^3.8"
+    },
+    "extra": {
+        "laravel": {
+        "providers": [
+            "NagadLaravel\\NagadServiceProvider"
+            ]
+        }
+    }
+}

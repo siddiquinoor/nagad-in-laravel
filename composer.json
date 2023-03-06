@@ -10,7 +10,7 @@
     },
     "autoload": {
         "psr-4": {
-            "siddiquinoor\\NagadLaravel": "src/"
+            "siddiquinoor\\NagadLaravel\\": "src/"
         }
     },
     "authors": [

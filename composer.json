@@ -5,8 +5,8 @@
     "license": "MIT",
     "keywords": ["Nagad API", "Nagad Laravel"],
     "autoload": {
-        "psr-0": {
-            "NagadLaravel": "src/"
+        "psr-4": {
+            "NagadLaravel\\": "src/NagadLaravel/"
         }
     },
     "authors": [

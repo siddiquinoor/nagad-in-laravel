@@ -12,7 +12,7 @@ You can install the package via composer:
 Setting up your configuration
 Extract the nagad config files:
 
-    php artisan vendor:publish --tag=nagad-config
+    php artisan vendor:publish --provider="siddiquinoor\NagadLaravel\NagadServiceProvider"
 
 - This will publish and config file in config_path() of your application. Eg. config/nagad.php
 - Configure the configurations for the nagad merchant account. Use sandbox = true for development stage.
@@ -22,14 +22,65 @@ Extract the nagad config files:
 
 
 ## env setup
-NAGAD_METHOD=sandbox
-NAGAD_MERHCANT_ID=YOUR_MERCHANT_ID
-NAGAD_MERHCANT_PHONE=YOUR_PHONE_NUMBER
-NAGAD_KEY_PUBLIC=YOUR_PUBLIC_KEY
-NAGAD_KEY_PRIVATE=YOUR_PRIVATE_KEY
-NAGAD_CALLBACK_URL=nagad.callback
+NAGAD_SANDBOX=true #for production use false
+NAGAD_MERCHANT_ID=""
+NAGAD_MERCHANT_NUMBER=""
+NAGAD_PUBLIC_KEY=""
+NAGAD_PRIVATE_KEY=""
+NAGAD_CALLBACK_URL=""
 
 ## Create a controller for handlling Nagad
 
     php artisan make:controller NagadController
+
+## Add routes
+
+    Route::get('nagad/pay',[App\Http\Controllers\NagadController::class,'pay'])->name('nagad.pay');
+    Route::get('nagad/callback', [App\Http\Controllers\NagadController::class,'callback']);
+    Route::get('nagad/refund/{paymentRefId}', [App\Http\Controllers\NagadController::class,'refund']);
+
+
+## The NagadController looks like the following
+
+    <?php
+
+    namespace siddiquinoor\NagadLaravel\Controllers;
+
+    use Illuminate\Http\Request;
+    use siddiquinoor\NagadLaravel\Facade\NagadPayment;
+
+    class NagadPaymentController
+    {
+        public function callback(Request $request)
+        {
+            if (!$request->status && !$request->order_id) {
+                return response()->json([
+                    "error" => "Not found any status"
+                ], 500);
+            }
+
+            if (config("nagad.response_type") == "json") {
+                return response()->json($request->all());
+            }
+
+            $verify = NagadPayment::verify($request->payment_ref_id);
+
+            if ($verify->status == "Success") {
+                return redirect("/nagad-payment/{$verify->orderId}/success");
+            } else {
+                return redirect("/nagad-payment/{$verify->orderId}/fail");
+            }
+
+        }
+
+        public function success($transId)
+        {
+            return view("nagad::success", compact('transId'));
+        }
+
+        public function fail($transId)
+        {
+            return view("nagad::failed", compact('transId'));
+        }
+    }
 

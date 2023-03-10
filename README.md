@@ -14,7 +14,7 @@ Nagad is one of the Mobile Financial Services in Bangladesh. This package is bui
 Install the package via composer:
 
 ```bash
-composer require siddiquinoor/nagad-in-laravel
+composer require siddiquinoor/nagad-in-laravel:dev-master
 ```
 
 ### Configuration

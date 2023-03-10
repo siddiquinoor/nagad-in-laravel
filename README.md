@@ -1,86 +1,180 @@
-# Nagad payment gateway for Laravel 6.x+
+# Nagad (Bangladesh) payment gateway for Laravel 6.x+, 7.x+, 8.x+
 
-[Nagad](https://nagad.com.bd) is one of the Mobile Financial Services in Bangladesh. This package is built for Nagad Payment Gateway for Laravel 6.x
+Nagad is one of the Mobile Financial Services in Bangladesh. This package is built for Nagad Payment Gateway for Laravel 6.x, 7.x and 8.x+
 
 ## Contents
-Installation
 
-You can install the package via composer:
+- [Installation](#installation)
+  - [Configuration](#configuration)
+- [Usage](#usage)
+- [License](#license)
 
-    composer require siddiquinoor/nagad-in-laravel:dev-main
+## Installation
 
-Setting up your configuration
-Extract the nagad config files:
+Install the package via composer:
 
-    php artisan vendor:publish --provider="siddiquinoor\NagadLaravel\NagadServiceProvider"
+```bash
+composer require siddiquinoor/nagad-in-laravel
+```
 
-- This will publish and config file in config_path() of your application. Eg. config/nagad.php
-- Configure the configurations for the nagad merchant account. Use sandbox = true for development stage.
-- Be sure to set the timezone of you application to Asia/Dhaka in order to work with Nagad PGW. To do this: go to config/app.php and set 'timezone' => 'Asia/Dhaka'
+### Configuration
+
+Add config file in your `config` directory:
+
+```bash
+php artisan vendor:publish --tag=nagad-config
+```
+
+- This will publish and config file in `config_path()` of your application. e.g `config/nagad.php`
+
+- Configure the Nagad merchant account. Use `sandbox = true` for development stage.
+
+- Be sure to set the **timezone** of you application to `Asia/Dhaka` in order to work with Nagad Payment Gate Way. To do this:
+  go to `config/app.php` and set `'timezone' => 'Asia/Dhaka'`
 
 ## Usage
 
+Set Nagad call back to our route
 
-## env setup
-NAGAD_SANDBOX=true #for production use false
-NAGAD_MERCHANT_ID=""
-NAGAD_MERCHANT_NUMBER=""
-NAGAD_PUBLIC_KEY=""
-NAGAD_PRIVATE_KEY=""
-NAGAD_CALLBACK_URL=""
+```php
+    // in routes/web.php
+    Route::get('/nagad/callback', 'NagadController@callback')->name('nagad.callback');
+```
 
-## Create a controller for handlling Nagad
+Name the route in the nagad config file.
 
-    php artisan make:controller NagadController
+```
+    //in config/nagad.php
+    'callback' => 'nagad.callback' // or use env variable to store
+```
 
-## Add routes
+# env setup
 
-    Route::get('nagad/pay',[App\Http\Controllers\NagadController::class,'pay'])->name('nagad.pay');
-    Route::get('nagad/callback', [App\Http\Controllers\NagadController::class,'callback']);
-    Route::get('nagad/refund/{paymentRefId}', [App\Http\Controllers\NagadController::class,'refund']);
+```bash
+NAGAD_METHOD=sandbox
+NAGAD_MERHCANT_ID=YOUR_MERCHANTID
+NAGAD_MERHCANT_PHONE=YOUR_PHONE_NUMBER
+NAGAD_KEY_PUBLIC=YOUR_PUBLIC_KEY
+NAGAD_KEY_PRIVATE=YOUR_PRIVATE_KEY
+NAGAD_CALLBACK_URL=nagad.callback
+```
 
+To Start payment, in your NagadController:
 
-## The NagadController looks like the following
-
-    <?php
-
-    namespace siddiquinoor\NagadLaravel\Controllers;
-
+```php
+    use NagadLaravel\Nagad;
     use Illuminate\Http\Request;
-    use siddiquinoor\NagadLaravel\Facade\NagadPayment;
 
-    class NagadPaymentController
+    public function createPayment()
     {
-        public function callback(Request $request)
-        {
-            if (!$request->status && !$request->order_id) {
-                return response()->json([
-                    "error" => "Not found any status"
-                ], 500);
-            }
+        /**
+         * Method 1: Quickest
+         * This will automatically redirect you to the Nagad PG Page
+         * */
 
-            if (config("nagad.response_type") == "json") {
-                return response()->json($request->all());
-            }
+        return Nagad::setOrderID('ORDERID123')
+            ->setAmount('540')
+            ->checkout()
+            ->redirect();
 
-            $verify = NagadPayment::verify($request->payment_ref_id);
+        /**
+         * Method 2: Manual Redirection
+         * This will return only the redirect URL and manually redirect to the url
+         * */
 
-            if ($verify->status == "Success") {
-                return redirect("/nagad-payment/{$verify->orderId}/success");
-            } else {
-                return redirect("/nagad-payment/{$verify->orderId}/fail");
-            }
+        $url = Nagad::setOrderID('ORDERID123')
+            ->setAmount('540')
+            ->checkout()
+            ->getRedirectUrl();
 
-        }
+        return ['url' => $url];
 
-        public function success($transId)
-        {
-            return view("nagad::success", compact('transId'));
-        }
 
-        public function fail($transId)
-        {
-            return view("nagad::failed", compact('transId'));
-        }
+        /**
+         * Method 3: Advanced
+         * You set additional params which will be return at the callback
+         * */
+
+        return Nagad::setOrderID('ORDERID123')
+            ->setAmount('540')
+            ->setAddionalInfo(['pid' => 9, 'myName' => 'DG'])
+            ->checkout()
+            ->redirect();
+
+
+        /**
+         * Method 4: Advanced Custom Callabck
+         * You can set/override callback url while creating payment
+         * */
+
+        return Nagad::setOrderID('ORDERID123')
+            ->setAmount('540')
+            ->setAddionalInfo(['pid' => 9, 'myName' => 'DG'])
+            ->setCallbackUrl("https://manual-callback.url/callback")
+            ->checkout()
+            ->redirect();
     }
 
+
+	//To receive the callback response use this method:
+
+    /**
+     * This is the routed callback method
+     * which receives a GET request.
+     *
+     * */
+
+    public function callback(Request $request)
+    {
+        $verified = Nagad::callback($request)->verify();
+        if($verified->success()) {
+
+            // Get Additional Data
+            dd($verified->getAdditionalData());
+
+            // Get Full Response
+            dd($verified->getVerifiedResponse());
+        } else {
+            dd($verified->getErrors());
+        }
+    }
+```
+
+To receive error response use this in App/Exceptions/Handler.php:
+
+```php
+public function render($request, Exception $exception)
+{
+    if($exception instanceof NagadException) {
+    //return custom error page when custom exception is thrown
+    return response()->view('errors.nagad', compact('exception'));
+    }
+
+    return parent::render($request, $exception);
+}
+```
+
+## Available Methods
+
+### For Checking-out
+
+- `setOrderID(string $orderID)` : `$orderID` to be any unique AlphaNumeric String
+- `setAmount(string $amount)` : `$amount` to be any valid currency numeric String
+- `setAddionalInfo(array $array)` : `$array` to be any array to be returned at callback
+- `setCallbackUrl(string $url)` : `$url` to be any url string to be overidden the defualt callback url set in config
+- `checkout()` : to initiate checkout process.
+- `redirect()` : to direct redirect to the NagadPG Web Page.
+- `getRedirectUrl()` : instead of redirecting, getting the redirect url manually.
+
+### For Callback
+
+- `callback($request)` : `$request` to be `Illuminate\Http\Request` instance
+- `verify()` : to verify the response.
+- `success()` : to check if transaction is succeed.
+- `getErrors()` : to get the error and errorCode if fails transactions | <kbd>returns</kbd> `array[]`
+- `getVerifiedResponse()` : to get the full verified response | <kbd>returns</kbd> `array[]`
+- `getAdditionalData(bool $object)` : to get the additional info passed during checkout. `$object` is to set return object or array.
+
+## License
+
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.

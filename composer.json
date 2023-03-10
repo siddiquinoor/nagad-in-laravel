@@ -18,16 +18,17 @@
             "name": "Siddiqui Noor",
             "email": "mr.noorbd@gmail.com"
         }
-    ],
-    "minimum-stability": "dev",
+    ],   
     "extra": {
         "laravel": {
             "providers": [
                 "siddiquinoor\\NagadLaravel\\NagadServiceProvider"
             ],
             "aliases": {
-                "NagadLaravel": "siddiquinoor\\NagadLaravel\\NagadLaravel"
+                "NagadLaravel": "siddiquinoor\\NagadLaravel\\"
             }
         }
-    }
+    },
+    "prefer-stable": true,
+    "minimum-stability": "dev"
 }

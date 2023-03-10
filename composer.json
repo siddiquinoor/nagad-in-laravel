@@ -22,7 +22,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "siddiquinoor\\NagadLaravel\\NagadServiceProvider"
+                "NagadLaravel\\NagadServiceProvider"
             ]
         }
     },

@@ -9,21 +9,24 @@
         "illuminate/support": "~6|~7|~8|~9|~10"
     },
     "autoload": {
-        "psr-0": {
-            "NagadLaravel\\": "src/"
+        "psr-4": {
+            "siddiquinoor\\NagadLaravel\\": "src/"
         }
-    },
+    },,
     "authors": [
         {
             "name": "Siddiqui Noor",
             "email": "mr.noorbd@gmail.com"
         }
     ],   
-    "extra": {
+   "extra": {
         "laravel": {
             "providers": [
-                "NagadLaravel\\NagadServiceProvider"
-            ]
+                "siddiquinoor\\NagadLaravel\\NagadServiceProvider"
+            ],
+            "aliases": {
+                "NagadLaravel": "siddiquinoor\\NagadLaravel\\"
+            }
         }
     },
     "prefer-stable": true,
